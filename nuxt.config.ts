@@ -9,7 +9,7 @@ export default defineNuxtConfig({
   vite: {
     plugins: [tailwindcss()],
   },
-  modules: ["@nuxt/ui", "shadcn-nuxt"],
+  modules: ["@nuxt/ui", "shadcn-nuxt", "@prisma/nuxt"],
   shadcn: {
     prefix: "",
     componentDir: "./app/components/ui",
