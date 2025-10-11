@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Students {
+  student_id Int     @id
+  first_name String
+  last_name  String
+  career     String
+  semester   Int
+  password   String
+  Turns      Turns[]
+}
+
+model Admins {
+  admin_id Int    @id
+  password String
+}
+
+model Queues {
+  queue_id       Int @id
+  current_spot   Int
+  estimated_wait Int
+  event_id       Int
+
+  event Events  @relation(fields: [event_id], references: [event_id])
+  Turns Turns[]
+}
+
+model Events {
+  event_id   Int      @id @default(autoincrement())
+  event_name String
+  location   String
+  day        DateTime
+  i_hour     DateTime
+  f_hour     DateTime
+  status     Boolean
+  Queues     Queues[]
+  Turns      Turns[]
+}
+
+model Turns {
+  turn_id    Int @id @default(autoincrement())
+  queue_id   Int
+  event_id   Int
+  student_id Int
+
+  queue   Queues   @relation(fields: [queue_id], references: [queue_id])
+  event   Events   @relation(fields: [event_id], references: [event_id])
+  student Students @relation(fields: [student_id], references: [student_id])
+}
