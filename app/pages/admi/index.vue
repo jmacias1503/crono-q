@@ -1,31 +1,67 @@
 <script setup lang="ts">
 import { CrossIcon } from "lucide-vue-next";
-import { ref } from "vue";
+import { computed } from "vue";
 import AdmiUpcomingEvents from "~/components/AdmiUpcomingEvents.vue";
+import AdmiCurrentEvent from "~/components/AdmiCurrentEvent.vue";
 
-const myEvent = ref({
-  eventId: 42,
-  currentSpot: 101,
-  eventName: "Inscripción a Talleres",
-  startDate: new Date("2025-11-20T09:00:00"),
-  location: "Edificio A, Sala de Juntas",
+// fetch events from the API and map to the components' expected shapes
+const { data: eventsResp, pending, error } = await useAsyncData("events", () => $fetch("/api/events"));
+
+const events = computed(() => {
+  const list = eventsResp.value?.events ?? [];
+  return list.map((e: any) => ({
+    eventId: e.event_id,
+    eventName: e.event_name,
+    startDate: new Date(e.day),
+    location: e.location,
+  }));
+});
+
+// For the current event component, use the first event if available
+const currentEvent = computed(() => {
+  const first = events.value?.[0];
+  if (!first) return {
+    eventId: 0,
+    currentSpot: 0,
+    eventName: 'Sin eventos',
+    location: '',
+  };
+  return {
+    eventId: first.eventId,
+    currentSpot: 0,
+    eventName: first.eventName,
+    location: first.location,
+  };
 });
 </script>
 
 <template>
   <div class="w-full min-h-screen relative">
-    <AdmiCurrentEvent :event-data="myEvent" />
+  <AdmiCurrentEvent :event-data="currentEvent" />
 
     <div class="flex flex-col items-center gap-4">
       <h1 class="text-secondary text-center text-2xl">Eventos disponibles</h1>
       <div class="px-6 md:w-2/3 flex flex-col gap-4">
-        <AdmiUpcomingEvents :event-data="myEvent" />
-        <Card class="w-full">
-          <CardContent class="flex flex-row text-primary justify-between">
-            <p>Añadir evento</p>
-            <CrossIcon />
-          </CardContent>
-        </Card>
+        <template v-if="pending">
+          <div class="py-6 text-center">Cargando eventos...</div>
+        </template>
+        <template v-else>
+          <AdmiUpcomingEvents
+            v-for="ev in events"
+            :key="ev.eventId"
+            :event-data="ev"
+          />
+        </template>
+
+        <!-- Clickable card that navigates to the add-event page -->
+        <NuxtLink to="/admi/addevent" class="w-full">
+          <Card class="w-full cursor-pointer hover:shadow-lg hover:scale-[1.02] transform transition-all duration-200">
+            <CardContent class="flex flex-row text-primary justify-between items-center p-4">
+              <p class="text-lg font-medium">Añadir evento</p>
+              <CrossIcon class="opacity-70" />
+            </CardContent>
+          </Card>
+        </NuxtLink>
       </div>
     </div>
 
