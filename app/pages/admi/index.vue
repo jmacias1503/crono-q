@@ -36,7 +36,7 @@ const currentEvent = computed(() => {
 </script>
 
 <template>
-  <div class="w-full min-h-screen relative">
+  <div class="w-full min-h-screen relative pb-28">
   <AdmiCurrentEvent :event-data="currentEvent" />
 
     <div class="flex flex-col items-center gap-4">
@@ -66,7 +66,7 @@ const currentEvent = computed(() => {
     </div>
 
     <footer
-      class="w-full items-center flex justify-center fixed p-4 bottom-0 bg-background"
+      class="w-full  items-center flex justify-center fixed p-4 bottom-0 bg-background"
     >
       <Button
         variant="outline"
