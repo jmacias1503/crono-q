@@ -5,6 +5,7 @@ import { toTypedSchema } from "@vee-validate/zod";
 import { Button } from "~/components/ui/button";
 import { toast } from 'vue-sonner';
 import type { FetchError } from 'ofetch';
+import { ref } from 'vue';
 import {
   FormControl,
   FormField,
@@ -23,6 +24,9 @@ const formSchema = toTypedSchema(eventSchema);
 const form = useForm({
   validationSchema: formSchema,
 });
+
+const isCreating = ref(false);
+const creatingMessage = ref('');
 
 const onSubmit = form.handleSubmit(async (values: EventForm) => {
   const payload = { ...values } as any;
@@ -68,12 +72,16 @@ const onSubmit = form.handleSubmit(async (values: EventForm) => {
   payload.i_hour = i_iso;
   payload.f_hour = f_iso;
 
+  isCreating.value = true;
+  creatingMessage.value = 'Creando evento...';
+
   try {
     const res = await $fetch("/api/events", { method: "POST", body: payload });
     toast.success("Evento creado", { description: "El evento se ha añadido correctamente." });
+    creatingMessage.value = 'Evento creado. Redirigiendo...';
+    // small delay so user sees the success state
+    await new Promise((r) => setTimeout(r, 1000));
     await navigateTo("/admi");
-    toast.success('Evento creado', { description: 'El evento se ha añadido correctamente.' });
-    await navigateTo('/admi');
   } catch (err) {
     console.error("Error creando evento:", err);
     const error = err as FetchError<{ message?: string; data?: { path?: (string|number)[]; message: string }[] }>;
@@ -86,10 +94,11 @@ const onSubmit = form.handleSubmit(async (values: EventForm) => {
       }, {});
       form.setErrors?.(fieldErrors as any);
       toast.warning('Revisa el formulario', { description: 'Corrige los campos marcados.' });
+      isCreating.value = false;
       return;
     }
-
     toast.error('No se pudo crear el evento', { description: error?.data?.message ?? 'Inténtalo más tarde.' });
+    isCreating.value = false;
   }
 });
 </script>
@@ -176,5 +185,13 @@ const onSubmit = form.handleSubmit(async (values: EventForm) => {
         Añadir Evento
       </Button>
     </form>
+  </div>
+  <div v-if="isCreating" class="register-overlay" aria-hidden="false">
+    <div class="overlay-content">
+      <div class="spinner">
+        <div></div><div></div><div></div>
+      </div>
+      <div class="overlay-text">{{ creatingMessage }}</div>
+    </div>
   </div>
 </template>

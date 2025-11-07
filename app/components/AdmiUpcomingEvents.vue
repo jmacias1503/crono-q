@@ -21,6 +21,15 @@ const toggleVisibility = () => {
   isVisible.value = !isVisible.value;
 };
 
+const editEvent = async () => {
+  isVisible.value = false;
+  try {
+    await navigateTo(`/admi/editevent?eventId=${props.eventData.eventId}`);
+  } catch (e) {
+    // ignore navigation errors
+  }
+};
+
 const formatDate = (date: Date): string => {
   return new Intl.DateTimeFormat("es-MX", {
     dateStyle: "long",
@@ -100,10 +109,9 @@ const formatTime = (date: Date): string => {
           <span>Hora de inicio: {{ formatTime(eventData.startDate) }} </span>
         </div>
       </CardContent>
+      
       <CardAction class="flex w-full justify-center">
-        <Button variant="secondary" @click="toggleVisibility" class="text-lg"
-          >Editar evento</Button
-        >
+        <Button variant="secondary" @click="editEvent" class="text-lg">Editar evento</Button>
       </CardAction>
     </Card>
   </div>
