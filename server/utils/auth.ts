@@ -1,3 +1,4 @@
+import { RegistrationForm } from "~/schemas/RegistrationSchema";
 import prisma from "./prisma";
 import type { StudentLoginForm, AdminLoginForm } from "~/schemas/LoginSchema";
 
@@ -90,6 +91,46 @@ export async function authenticateAdmin(
       userType: "admin",
       id: admin.admin_id,
       admin_id: admin.admin_id,
+    },
+  };
+}
+
+export async function registerStudent(
+  data: RegistrationForm
+): Promise<AuthSuccessResponse> {
+  const existing = await prisma.students.findUnique({
+    where: { student_id: data.student_id },
+  });
+
+  if (existing) {
+    throw createError({
+      statusCode: 409,
+      message: "El estudiante ya está registrado",
+    });
+  }
+
+  const created = await prisma.students.create({
+    data: {
+      student_id: data.student_id,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      career: data.career,
+      semester: data.semester,
+      password: data.password,
+    },
+  });
+
+  return {
+    success: true,
+    message: "Registro exitoso",
+    data: {
+      userType: "student",
+      id: created.student_id,
+      student_id: created.student_id,
+      first_name: created.first_name,
+      last_name: created.last_name,
+      career: created.career,
+      semester: created.semester,
     },
   };
 }
