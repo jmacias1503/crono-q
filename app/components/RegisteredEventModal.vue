@@ -29,16 +29,26 @@ const toggleVisibility = () => {
   isVisible.value = !isVisible.value;
 };
 
-const formatDate = (date: Date): string => {
-  return new Intl.DateTimeFormat("es-MX", {
-    dateStyle: "long",
-  }).format(date);
+const formatDate = (date?: Date | null): string => {
+  if (!date) return 'Fecha por definir';
+  try {
+    return new Intl.DateTimeFormat("es-MX", {
+      dateStyle: "long",
+    }).format(date);
+  } catch (e) {
+    return 'Fecha inválida';
+  }
 };
 
-const formatTime = (date: Date): string => {
-  return new Intl.DateTimeFormat("es-MX", {
-    timeStyle: "short",
-  }).format(date);
+const formatTime = (date?: Date | null): string => {
+  if (!date) return 'Hora por definir';
+  try {
+    return new Intl.DateTimeFormat("es-MX", {
+      timeStyle: "short",
+    }).format(date);
+  } catch (e) {
+    return 'Hora inválida';
+  }
 };
 </script>
 

@@ -3,13 +3,15 @@ export interface CurrentEvent {
   currentSpot: number;
   eventName: string;
   location: string;
+  eventCode?: string;
 }
 
 export interface EventSummary {
   eventId: number;
   eventName: string;
-  startDate: Date;
+  startDate?: Date;
   location: string;
+  eventCode?: string;
 }
 
 export interface SpotData {

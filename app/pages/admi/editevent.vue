@@ -38,13 +38,13 @@ const router = useRouter();
 const eventId = String(route.query.eventId ?? "");
 
 // helper to format ISO -> date and time inputs
-function isoToDate(iso?: string) {
+function isoToDate(iso?: string | null) {
   if (!iso) return "";
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return "";
   return d.toISOString().slice(0, 10);
 }
-function isoToTime(iso?: string) {
+function isoToTime(iso?: string | null) {
   if (!iso) return "";
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return "";
@@ -76,8 +76,8 @@ const onSubmit = form.handleSubmit(async (values: EventForm) => {
   // show updating overlay
   isUpdating.value = true;
   updatingMessage.value = 'Actualizando evento...';
-  // normalize date+time to ISO
-  function toISODateTime(dateStr: string, timeStr: string) {
+  // normalize date+time to ISO (allow events without date/time)
+  function toISODateTime(dateStr?: string, timeStr?: string) {
     if (!dateStr || !timeStr) return null;
     const time = timeStr.length === 5 ? `${timeStr}:00` : timeStr;
     const iso = `${dateStr}T${time}`;
@@ -86,22 +86,30 @@ const onSubmit = form.handleSubmit(async (values: EventForm) => {
   }
 
   const payload: any = { ...values };
-  const dayIso = (() => {
-    const d = new Date(values.day);
-    return Number.isFinite(d.getTime()) ? d.toISOString() : null;
-  })();
-  const iIso = toISODateTime(values.day, values.i_hour as string);
-  const fIso = toISODateTime(values.day, values.f_hour as string);
 
-  if (!dayIso || !iIso || !fIso) {
-    toast.warning("Fechas/horas inválidas", { description: "Verifica los campos de fecha y hora." });
-    isUpdating.value = false;
-    return;
+  // If no day provided, treat as event without date/time and remove related fields
+  if (!values.day) {
+    delete payload.day;
+    delete payload.i_hour;
+    delete payload.f_hour;
+  } else {
+    const dayIso = (() => {
+      const d = new Date(values.day);
+      return Number.isFinite(d.getTime()) ? d.toISOString() : null;
+    })();
+    const iIso = toISODateTime(values.day, values.i_hour as string);
+    const fIso = toISODateTime(values.day, values.f_hour as string);
+
+    if (!dayIso || !iIso || !fIso) {
+      toast.warning("Fechas/horas inválidas", { description: "Verifica los campos de fecha y hora." });
+      isUpdating.value = false;
+      return;
+    }
+
+    payload.day = dayIso;
+    payload.i_hour = iIso;
+    payload.f_hour = fIso;
   }
-
-  payload.day = dayIso;
-  payload.i_hour = iIso;
-  payload.f_hour = fIso;
 
   try {
     await $fetch(`/api/events/${eventId}`, { method: 'PUT', body: payload });
@@ -150,9 +158,9 @@ const updatingMessage = ref('');
       <h1 class="text-secondary text-4xl text-center">Editar Evento</h1>
     </div>
 
-    <div class="w-full h-[80vh] flex justify-center items-center">
+    <div class="w-full p-3 md:p-0 h-[80vh] flex justify-center items-center">
       <form
-        class="space-y-6 md:w-1/2 justify-center flex flex-col items-center h-full"
+        class="space-y-6 w-full md:w-1/2 justify-center flex flex-col items-center h-full"
         novalidate
         @submit.prevent="onSubmit"
       >
@@ -211,7 +219,7 @@ const updatingMessage = ref('');
           </FormField>
         </div>
 
-        <Button type="submit" class="w-1/2 text-xl" variant="secondary">
+        <Button type="submit" class="w-full md:w-1/2 text-xl" variant="secondary">
           Actualizar Evento
         </Button>
       </form>

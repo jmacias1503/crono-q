@@ -26,7 +26,7 @@ model Admins {
 }
 
 model Queues {
-  queue_id       Int @id
+  queue_id       Int @id @default(autoincrement())
   current_spot   Int
   estimated_wait Int
   event_id       Int
@@ -39,9 +39,10 @@ model Events {
   event_id   Int      @id @default(autoincrement())
   event_name String
   location   String
-  day        DateTime
-  i_hour     DateTime
-  f_hour     DateTime
+  day        DateTime?
+  i_hour     DateTime?
+  f_hour     DateTime?
+  event_code String?  @unique
   status     Boolean
   Queues     Queues[]
   Turns      Turns[]

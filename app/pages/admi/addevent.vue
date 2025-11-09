@@ -48,29 +48,31 @@ const onSubmit = form.handleSubmit(async (values: EventForm) => {
   const i_iso = toISODateTime(payload.day, payload.i_hour);
   const f_iso = toISODateTime(payload.day, payload.f_hour);
   const day_iso = (() => {
+    if (!payload.day) return null;
     const d = new Date(payload.day);
     return Number.isFinite(d.getTime()) ? d.toISOString() : null;
   })();
 
+  // If no day provided, treat as event without date/time: remove related fields
   if (!day_iso) {
-    form.setErrors?.({ day: "Fecha inválida" });
-    toast.warning("Fecha inválida", { description: "Verifica la fecha seleccionada." });
-    return;
+    delete payload.day;
+    delete payload.i_hour;
+    delete payload.f_hour;
+  } else {
+    // day provided: require valid times
+    if (!i_iso || !f_iso) {
+      const errs: Record<string,string> = {};
+      if (!i_iso) errs.i_hour = "Hora de inicio inválida";
+      if (!f_iso) errs.f_hour = "Hora de fin inválida";
+      form.setErrors?.(errs as any);
+      toast.warning("Hora inválida", { description: "Asegúrate de seleccionar una hora válida." });
+      return;
+    }
+    // enviar ISO strings (Prisma en el server puede crear Date desde ISO)
+    payload.day = day_iso;
+    payload.i_hour = i_iso;
+    payload.f_hour = f_iso;
   }
-
-  if (!i_iso || !f_iso) {
-    const errs: Record<string,string> = {};
-    if (!i_iso) errs.i_hour = "Hora de inicio inválida";
-    if (!f_iso) errs.f_hour = "Hora de fin inválida";
-    form.setErrors?.(errs as any);
-    toast.warning("Hora inválida", { description: "Asegúrate de seleccionar una hora válida." });
-    return;
-  }
-
-  // enviar ISO strings (Prisma en el server puede crear Date desde ISO)
-  payload.day = day_iso;
-  payload.i_hour = i_iso;
-  payload.f_hour = f_iso;
 
   isCreating.value = true;
   creatingMessage.value = 'Creando evento...';
@@ -117,10 +119,10 @@ const onSubmit = form.handleSubmit(async (values: EventForm) => {
   </div>
 
   <div
-    class="w-full flex flex-col justify-center items-center mt-12 text-foreground h-[80vh]"
+    class="w-full p-3 md:p-0 flex flex-col justify-center items-center mt-12 text-foreground h-[80vh]"
   >
     <form
-      class="space-y-6 w-1/2 justify-center flex flex-col items-center"
+      class="space-y-6 w-full md:w-1/2 justify-center flex flex-col items-center"
       novalidate
       @submit.prevent="onSubmit"
     >
@@ -181,7 +183,7 @@ const onSubmit = form.handleSubmit(async (values: EventForm) => {
         </FormField>
       </div>
 
-      <Button type="submit" class="w-1/2 text-xl" variant="secondary">
+      <Button type="submit" class="w-full md:w-1/2 text-xl" variant="secondary">
         Añadir Evento
       </Button>
     </form>

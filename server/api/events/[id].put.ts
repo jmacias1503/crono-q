@@ -18,26 +18,31 @@ export default defineEventHandler(async (event) => {
 
   const { event_name, location, day, i_hour, f_hour } = validation.data;
 
-  // validate dates
-  const dayDt = new Date(day);
-  const iDt = new Date(i_hour);
-  const fDt = new Date(f_hour);
+  const dataToUpdate: any = {
+    event_name,
+    location,
+  };
+
   const invalids: any[] = [];
-  if (!Number.isFinite(dayDt.getTime())) invalids.push({ path: ['day'], message: 'Fecha inválida' });
-  if (!Number.isFinite(iDt.getTime())) invalids.push({ path: ['i_hour'], message: 'Hora de inicio inválida' });
-  if (!Number.isFinite(fDt.getTime())) invalids.push({ path: ['f_hour'], message: 'Hora de fin inválida' });
+  if (day) {
+    const dayDt = new Date(day);
+    if (!Number.isFinite(dayDt.getTime())) invalids.push({ path: ['day'], message: 'Fecha inválida' });
+    else dataToUpdate.day = dayDt;
+  }
+  if (i_hour) {
+    const iDt = new Date(i_hour);
+    if (!Number.isFinite(iDt.getTime())) invalids.push({ path: ['i_hour'], message: 'Hora de inicio inválida' });
+    else dataToUpdate.i_hour = iDt;
+  }
+  if (f_hour) {
+    const fDt = new Date(f_hour);
+    if (!Number.isFinite(fDt.getTime())) invalids.push({ path: ['f_hour'], message: 'Hora de fin inválida' });
+    else dataToUpdate.f_hour = fDt;
+  }
+
   if (invalids.length) throw createError({ statusCode: 400, message: 'Fechas inválidas', data: invalids });
 
-  const updated = await prisma.events.update({
-    where: { event_id: id },
-    data: {
-      event_name,
-      location,
-      day: dayDt,
-      i_hour: iDt,
-      f_hour: fDt,
-    },
-  });
+  const updated = await prisma.events.update({ where: { event_id: id }, data: dataToUpdate });
 
   return { event: updated };
 });
