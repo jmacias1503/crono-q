@@ -27,11 +27,74 @@ const events = computed(() => {
   }));
 });
 
-// Placeholder for user's current registered spot — could be fetched separately
-const mySpot = ref({ userSpot: 0, eventName: '', currentSpot: 0, waitingTime: new Date(), location: '' });
+// User's current registered spot (will be set from student's turns)
+// NOTE: make this `any` so we can add turn_id coming from the backend
+const mySpot = ref<any>({ userSpot: 0, eventName: '', currentSpot: 0, waitingTime: new Date(), location: '' });
 
-// For now, pick the first event as the user's registered event if any (replace with real user lookup later)
-const registeredEvent = computed(() => (events.value && events.value.length > 0 ? events.value[0] : null));
+// registeredEvent will hold the event the student is registered for (if any)
+const registeredEvent = ref<any | null>(null);
+
+const fetchRegistered = async () => {
+  try {
+    // call authenticated endpoint; middleware provides student identity via cookie
+    try {
+      const res = await $fetch('/api/students/student_events', { credentials: 'include' });
+      const turns = res.turns ?? [];
+      if (!turns || turns.length === 0) {
+        registeredEvent.value = null;
+        return;
+      }
+
+      const first = turns[0];
+      if (!first) {
+        registeredEvent.value = null;
+        return;
+      }
+
+      registeredEvent.value = {
+        eventId: first.event.event_id,
+        eventName: first.event.event_name,
+        startDate: first.event.i_hour ? new Date(first.event.i_hour) : undefined,
+        location: first.event.location,
+        eventCode: first.event.event_code,
+      };
+
+      // IMPORTANT: include turn_id in mySpot so RegisteredEventModal can cancel by id
+      mySpot.value = {
+        userSpot: first.spot_number ?? first.turn_id,
+        eventName: first.event.event_name,
+        currentSpot: 0,
+        waitingTime: new Date(),
+        location: first.event.location,
+        turn_id: first.turn_id, // <-- agregado: ID de turno necesario para cancelar
+      };
+      return;
+    } catch (err: any) {
+      if (err?.statusCode === 401 || err?.status === 401) {
+        // not authenticated -> redirect to login
+        try { (await import('#app')).navigateTo('/login'); } catch {}
+        return;
+      }
+      registeredEvent.value = null;
+      return;
+    }
+  } catch (e) {
+    // ignore 404 or errors; treat as no registered events
+    registeredEvent.value = null;
+  }
+};
+
+// fetch registered on page load
+fetchRegistered();
+
+// called when the RegisteredEventModal emits 'cancelled'
+const onRegisteredCancelled = async () => {
+  // optimistically clear UI so user sees defaults immediately
+  registeredEvent.value = null;
+  mySpot.value = { userSpot: 0, eventName: '', currentSpot: 0, waitingTime: new Date(), location: '', turn_id: undefined };
+  // then refresh from server to get authoritative state
+  await fetchRegistered();
+};
 </script>
 
 <template>
@@ -61,7 +124,11 @@ const registeredEvent = computed(() => (events.value && events.value.length > 0 
       <div class="px-6 md:w-2/3 flex flex-col gap-4">
         <h3 class="text-secondary text-center text-2xl">Eventos inscritos</h3>
         <template v-if="registeredEvent">
-          <RegisteredEventModal :event-data="registeredEvent" :spot-data="mySpot" />
+          <RegisteredEventModal
+            :event-data="registeredEvent"
+            :spot-data="mySpot"
+            @cancelled="onRegisteredCancelled"
+          />
         </template>
       </div>
       <div class="px-6 md:w-2/3 flex flex-col gap-4">
@@ -84,7 +151,7 @@ const registeredEvent = computed(() => (events.value && events.value.length > 0 
             </div>
           </template>
           <template v-else>
-            <UnregisteredEventSummary v-for="ev in events" :key="ev.eventId" :event-data="ev" />
+            <UnregisteredEventSummary v-for="ev in events" :key="ev.eventId" :event-data="ev" @taken="fetchRegistered" />
           </template>
         </template>
       </div>

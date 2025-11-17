@@ -9,8 +9,47 @@ const props = defineProps<{
   eventData: EventSummary;
 }>();
 
+const { eventData } = props;
+
 const isVisible = ref(false);
 const innerContainer = ref(null);
+
+const isTakingTurn = ref(false);
+const emit = defineEmits<{ (e: 'taken'): void }>();
+
+const errorMessage = ref<string | null>(null);
+
+const takeTurn = async () => {
+  if (isTakingTurn.value) return;
+  isTakingTurn.value = true;
+  errorMessage.value = null;
+  try {
+    // Build payload without trusting client-side student_id; server uses authenticated user
+    const payload: Record<string, any> = {};
+    if (eventData.eventCode) payload.event_code = eventData.eventCode;
+    else payload.event_id = eventData.eventId;
+
+    const res = await $fetch('/api/turns', { method: 'POST', body: payload, credentials: 'include' });
+    // emit to parent so it can refresh registered items
+    emit('taken');
+    // close modal
+    isVisible.value = false;
+    // success handled by parent refresh / UI update
+  } catch (err: any) {
+    const msg = err?.data?.message || err?.message || 'Error al tomar turno';
+    if (err?.statusCode === 401 || err?.status === 401) {
+      // unauthenticated - redirect to login
+      try {
+        (await import('#app')).navigateTo('/login');
+        return;
+      } catch {}
+    }
+    // surface error in the UI instead of alert
+    errorMessage.value = String(msg);
+  } finally {
+    isTakingTurn.value = false;
+  }
+};
 
 const showQR = ref(false);
 const toggleQR = () => (showQR.value = !showQR.value);
@@ -120,10 +159,23 @@ const formatTime = (date?: Date | null): string => {
         </div>
       </CardContent>
       <CardAction class="flex w-full justify-center">
-        <Button variant="secondary" @click="toggleVisibility" class="text-lg"
-          >Tomar un turno</Button
-        >
+        <div class="w-full max-w-xs">
+          <Button variant="secondary" :disabled="isTakingTurn" @click="takeTurn" class="text-lg w-full"
+            >{{ isTakingTurn ? 'Enviando...' : 'Tomar un turno' }}</Button>
+          <p v-if="errorMessage" class="text-sm text-destructive mt-2 text-center">{{ errorMessage }}</p>
+        </div>
       </CardAction>
+
+      <!-- loading overlay inside modal -->
+      <div v-if="isTakingTurn" class="absolute inset-0 bg-black/40 z-50 flex items-center justify-center rounded-xl">
+        <div class="flex flex-col items-center gap-3 bg-card/80 p-4 rounded-lg">
+          <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+          </svg>
+          <span class="text-sm text-primary">Tomando turno...</span>
+        </div>
+      </div>
     </Card>
   </div>
 

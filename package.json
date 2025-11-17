@@ -22,6 +22,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "jsonwebtoken": "^9.0.2",
     "lucide-vue-next": "^0.544.0",
     "nuxt": "^4.1.1",
     "qrcode.vue": "^3.6.0",
@@ -37,6 +38,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/vue-barcode-reader": "^0.0.3",
     "@vite-pwa/nuxt": "^1.0.7",
     "prisma": "^6.19.0",

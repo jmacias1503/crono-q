@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import type { FetchError } from "ofetch";
@@ -36,6 +36,16 @@ const { handleSubmit, setErrors, isSubmitting } = useForm<LoginForm>({
 const isRedirecting = ref(false);
 const redirectMessage = ref("Iniciando sesión. Cargando dashboard...");
 
+onMounted(async () => {
+  // if the user already has a valid session cookie, /api/auth/me will return user data
+  try {
+    await $fetch('/api/auth/me', { method: 'GET', credentials: 'include' });
+    await navigateTo('/user');
+  } catch (e) {
+    // not authenticated — do nothing and let the user log in
+  }
+});
+
 function onFieldBlur(componentField: any) {
   try {
     const val = componentField.value;
@@ -62,17 +72,33 @@ const onSubmit = handleSubmit(async (values: LoginForm) => {
   console.log("📝 Intentando login...", payload);
 
   try {
-    const res = await $fetch('/api/auth/login', {
+    // POST login (server will set HttpOnly cookie)
+    await $fetch('/api/auth/login', {
       method: 'POST',
       body: payload,
     });
 
-    isRedirecting.value = true;
-    redirectMessage.value = 'Inicio de sesión correcto. Redirigiendo al dashboard...';
-    await new Promise((r) => setTimeout(r, 2000));
+    // validate server session by calling /api/auth/me (ensure cookie is sent)
+    try {
+      isRedirecting.value = true;
+      redirectMessage.value = 'Inicio de sesión correcto. Validando sesión...';
 
-    // navigate to student dashboard
-    await navigateTo('/user');
+      const me = await $fetch('/api/auth/me', {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      // small delay for UX
+      await new Promise((r) => setTimeout(r, 600));
+
+      // if /me resolved, go to dashboard
+      await navigateTo('/user');
+    } catch (e) {
+      // if /me failed, clear overlay and show error
+      isRedirecting.value = false;
+      toast.error('No se pudo validar la sesión. Intenta de nuevo.');
+      console.error('Error al validar /api/auth/me después de login', e);
+    }
   } catch (err) {
     console.log('❌ Error en login:', err);
     const error = err as FetchError<{
