@@ -31,7 +31,7 @@ const userSpotDisplay = computed(() => {
   return (s || s === 0) ? s : DEFAULT.userSpot;
 });
 
-const eventNameDisplay = computed(() => props.eventData?.eventName ?? props.eventData?.event_name ?? DEFAULT.eventName);
+const eventNameDisplay = computed(() => props.eventData?.eventName ?? props.eventData?.eventName ?? DEFAULT.eventName);
 
 const locationDisplay = computed(() => props.spotData?.location ?? props.eventData?.location ?? DEFAULT.location);
 
