@@ -119,9 +119,6 @@ const formatTime = (date?: Date | null): string => {
         class="min-h-full flex flex-col items-center justify-center text-primary"
       >
         <div class="flex flex-col gap-2 items-center">
-          <Button variant="ghost" class="flex w-10 h-10 p-2" @click="toggleQR">
-            QR
-          </Button>
           <Button
             variant="ghost"
             class="flex w-10 h-10 p-2"
