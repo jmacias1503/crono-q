@@ -20,8 +20,10 @@ const myEvent = ref({
       <h1 class="text-secondary text-center text-2xl">Eventos disponibles</h1>
       <div class="px-6 md:w-2/3 flex flex-col gap-4">
         <AdmiUpcomingEvents :event-data="myEvent" />
-        <Card class="w-full">
-          <CardContent class="flex flex-row text-primary justify-between">
+        <Card class="w-full hover:bg-teal-100">
+          <CardContent
+            class="flex flex-row text-primary text-2xl justify-between items-center"
+          >
             <p>Añadir evento</p>
             <CrossIcon />
           </CardContent>
