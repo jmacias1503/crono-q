@@ -9,9 +9,10 @@ export const eventSchema = z.object({
     .string()
     .min(1, { message: "La ubicación es requerida" })
     .max(50, { message: "La ubicación debe tener máximo 50 caracteres" }),
-  day: z.string().min(1, { message: "La fecha es requerida" }),
-  i_hour: z.string().min(1, { message: "La hora de inicio es requerida" }),
-  f_hour: z.string().min(1, { message: "La hora de finalización es requerida" }),
+  // Make date/time optional — events can be created without specifying them
+  day: z.string().optional(),
+  i_hour: z.string().optional(),
+  f_hour: z.string().optional(),
 });
 
 export type EventForm = z.infer<typeof eventSchema>;

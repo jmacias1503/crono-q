@@ -3,6 +3,9 @@ import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 
 import { Button } from "~/components/ui/button";
+import { toast } from 'vue-sonner';
+import type { FetchError } from 'ofetch';
+import { ref } from 'vue';
 import {
   FormControl,
   FormField,
@@ -22,8 +25,83 @@ const form = useForm({
   validationSchema: formSchema,
 });
 
-const onSubmit = form.handleSubmit((values: EventForm) => {
-  console.log(values);
+const isCreating = ref(false);
+const creatingMessage = ref('');
+
+const onSubmit = form.handleSubmit(async (values: EventForm) => {
+  const payload = { ...values } as any;
+  Object.keys(payload).forEach((k) => {
+    const v = payload[k];
+    if (typeof v === "string") payload[k] = v.trim();
+  });
+
+  // helper: combina day + time en ISO y valida
+  function toISODateTime(day: string, time: string) {
+    if (!day || !time) return null;
+    // time puede ser "09:00" o "09:00:00" — asegurar segundos
+    const t = time.length === 5 ? `${time}:00` : time;
+    const iso = `${day}T${t}`;
+    const d = new Date(iso);
+    return Number.isFinite(d.getTime()) ? d.toISOString() : null;
+  }
+
+  const i_iso = toISODateTime(payload.day, payload.i_hour);
+  const f_iso = toISODateTime(payload.day, payload.f_hour);
+  const day_iso = (() => {
+    if (!payload.day) return null;
+    const d = new Date(payload.day);
+    return Number.isFinite(d.getTime()) ? d.toISOString() : null;
+  })();
+
+  // If no day provided, treat as event without date/time: remove related fields
+  if (!day_iso) {
+    delete payload.day;
+    delete payload.i_hour;
+    delete payload.f_hour;
+  } else {
+    // day provided: require valid times
+    if (!i_iso || !f_iso) {
+      const errs: Record<string,string> = {};
+      if (!i_iso) errs.i_hour = "Hora de inicio inválida";
+      if (!f_iso) errs.f_hour = "Hora de fin inválida";
+      form.setErrors?.(errs as any);
+      toast.warning("Hora inválida", { description: "Asegúrate de seleccionar una hora válida." });
+      return;
+    }
+    // enviar ISO strings (Prisma en el server puede crear Date desde ISO)
+    payload.day = day_iso;
+    payload.i_hour = i_iso;
+    payload.f_hour = f_iso;
+  }
+
+  isCreating.value = true;
+  creatingMessage.value = 'Creando evento...';
+
+  try {
+    const res = await $fetch("/api/events", { method: "POST", body: payload });
+    toast.success("Evento creado", { description: "El evento se ha añadido correctamente." });
+    creatingMessage.value = 'Evento creado. Redirigiendo...';
+    // small delay so user sees the success state
+    await new Promise((r) => setTimeout(r, 1000));
+    await navigateTo("/admi");
+  } catch (err) {
+    console.error("Error creando evento:", err);
+    const error = err as FetchError<{ message?: string; data?: { path?: (string|number)[]; message: string }[] }>;
+    const fieldIssues = error?.data?.data;
+    if (Array.isArray(fieldIssues) && fieldIssues.length > 0) {
+      const fieldErrors = fieldIssues.reduce<Record<string,string>>((acc, issue) => {
+        const field = issue.path?.[0];
+        if (typeof field === 'string') acc[field] = issue.message;
+        return acc;
+      }, {});
+      form.setErrors?.(fieldErrors as any);
+      toast.warning('Revisa el formulario', { description: 'Corrige los campos marcados.' });
+      isCreating.value = false;
+      return;
+    }
+    toast.error('No se pudo crear el evento', { description: error?.data?.message ?? 'Inténtalo más tarde.' });
+    isCreating.value = false;
+  }
 });
 </script>
 
@@ -41,11 +119,12 @@ const onSubmit = form.handleSubmit((values: EventForm) => {
   </div>
 
   <div
-    class="w-full flex flex-col justify-center items-center mt-12 text-foreground h-[80vh]"
+    class="w-full p-3 md:p-0 flex flex-col justify-center items-center mt-12 text-foreground h-[80vh]"
   >
     <form
-      class="space-y-6 w-1/2 justify-center flex flex-col items-center"
-      @submit="onSubmit"
+      class="space-y-6 w-full md:w-1/2 justify-center flex flex-col items-center"
+      novalidate
+      @submit.prevent="onSubmit"
     >
       <FormField v-slot="{ componentField }" name="event_name" class="w-full">
         <FormItem class="w-full">
@@ -104,9 +183,17 @@ const onSubmit = form.handleSubmit((values: EventForm) => {
         </FormField>
       </div>
 
-      <Button type="submit" class="w-1/2 text-xl" variant="secondary">
+      <Button type="submit" class="w-full md:w-1/2 text-xl" variant="secondary">
         Añadir Evento
       </Button>
     </form>
+  </div>
+  <div v-if="isCreating" class="register-overlay" aria-hidden="false">
+    <div class="overlay-content">
+      <div class="spinner">
+        <div></div><div></div><div></div>
+      </div>
+      <div class="overlay-text">{{ creatingMessage }}</div>
+    </div>
   </div>
 </template>

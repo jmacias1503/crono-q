@@ -4,10 +4,14 @@ import { computed } from "vue";
 
 const props = defineProps<{
   turnId: number | string;
+  studentId: number | string;
 }>();
 
 const turnInformation = computed(() => {
-  return `/admi/${props.turnId}`;
+  return JSON.stringify({ 
+    student_id: Number(props.studentId),
+    turn_id: Number(props.turnId)
+  });
 });
 </script>
 

@@ -1,28 +1,25 @@
 //Endpoint para obtener todos los eventos de un estudiante
 import prisma from "../../utils/prisma";
-import { getQuery } from "h3";
 
 export default defineEventHandler(async (event) => {
-    const student_id = Number(getQuery(event).student_id);
+    // Prefer authenticated user from middleware
+    const ctxUser = (event.context as any)?.user;
+    let student_id: number | undefined;
 
-    if (!student_id) {
-        throw createError({
-            statusCode: 400,
-            message: "student_id es requerido",
-        });
+    if (ctxUser && ctxUser.student_id) {
+        student_id = Number(ctxUser.student_id);
     }
-    
+
+    // If not authenticated, return 401
+    if (!student_id) {
+        throw createError({ statusCode: 401, message: 'Unauthorized' });
+    }
+
     const turns = await prisma.turns.findMany({
         where: { student_id },
-        include: { event: true }, //Cargamos los datos del evento asociado a cada turno
+        include: { event: true },
     });
 
-    if (turns.length === 0) {
-        throw createError({
-            statusCode: 404,
-            message: "No se encontraron turnos para el estudiante",
-        });
-    }
-
-    return { turns };
-})
+    // Return empty array when no turns found instead of 404 to avoid breaking SSR/page rendering
+    return { turns: turns ?? [] };
+});
