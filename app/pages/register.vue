@@ -72,7 +72,6 @@ const onSubmit = handleSubmit(async (values: RegistrationForm) => {
       body: cleaned,
     });
     
-    console.log("✅ Registro exitoso, mostrando toast...");
     toast.success("¡Registro completo!", {
       description: "Tu cuenta fue creada correctamente.",
     });
@@ -87,7 +86,6 @@ const onSubmit = handleSubmit(async (values: RegistrationForm) => {
 
     resetForm();
   } catch (err) {
-    console.log("❌ Error en registro:", err);
     
     const error = err as FetchError<{
       message?: string;
@@ -110,14 +108,12 @@ const onSubmit = handleSubmit(async (values: RegistrationForm) => {
 
       setErrors(fieldErrors);
 
-      console.log("⚠️ Mostrando toast de advertencia...");
       toast.warning("Revisa el formulario", {
         description: "Corrige los campos marcados e inténtalo de nuevo.",
       });
       return;
     }
 
-    console.log("🚨 Mostrando toast de error...");
     toast.error("No se pudo registrar", {
       description: error?.data?.message ?? "Inténtalo más tarde.",
     });

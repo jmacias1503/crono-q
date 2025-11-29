@@ -62,3 +62,17 @@ model Turns {
   student Students @relation(fields: [student_id], references: [student_id])
   @@unique([event_id, student_id])
 }
+
+model TurnLogs {
+  log_id         Int      @id @default(autoincrement())
+  student_id     Int
+  first_name     String
+  last_name      String
+  career         String
+  semester       String
+  event_id       Int
+  fecha_registro DateTime @default(now())
+  
+  @@index([event_id])
+  @@index([student_id])
+}

@@ -17,10 +17,8 @@ const recentProcessed = new Set<number>();
 
 const onDecode = async (text: string) => {
   // 1. Log inicial de lo que lee la cámara
-  console.log('📷 [SCANNER] Texto crudo detectado:', text);
 
   if (isProcessing.value) {
-    console.log('⚠️ [SCANNER] Ignorado: Ya se está procesando una petición.');
     return;
   }
   
@@ -34,19 +32,16 @@ const onDecode = async (text: string) => {
   // Intento A: JSON
   try {
     const parsed = JSON.parse(text);
-    console.log('🧩 [SCANNER] JSON parseado:', parsed);
     if (typeof parsed === 'object' && parsed !== null) {
       const keys = ['student_id', 'id', 'studentId', 'student', 'userId', 'user_id'];
       for (const k of keys) {
         if (Object.prototype.hasOwnProperty.call(parsed, k) && (parsed as any)[k] != null) {
           studentId = Number((parsed as any)[k]);
-          console.log(`✅ [SCANNER] ID encontrado en JSON (key: ${k}):`, studentId);
           break;
         }
       }
     }
   } catch (e) {
-    console.log('ℹ️ [SCANNER] No es un JSON válido, intentando texto plano...');
   }
 
   // Intento B: Texto plano numérico
@@ -57,13 +52,11 @@ const onDecode = async (text: string) => {
     const match = trimmed.match(/(\d+)/); 
     if (match) {
         studentId = Number(match[1]);
-        console.log('✅ [SCANNER] ID extraído por Regex:', studentId);
     }
   }
 
   // 3. Validación del ID
   if (!studentId) {
-    console.warn('❌ [SCANNER] No se pudo extraer un ID válido del texto:', text);
     processingMessage.value = 'QR inválido';
     toast.error('QR inválido', { description: 'No se encontró un ID en el código.' });
     
@@ -75,10 +68,8 @@ const onDecode = async (text: string) => {
 
   // 4. Validación del Evento
   const eventId = Number(route.query.eventId ?? 0);
-  console.log('📅 [SCANNER] Event ID actual:', eventId);
 
   if (!eventId) {
-    console.error('❌ [SCANNER] Falta el eventId en la URL (query param).');
     toast.error('Error de configuración', { description: 'No hay evento seleccionado.' });
     isProcessing.value = false;
     return;
@@ -86,7 +77,6 @@ const onDecode = async (text: string) => {
 
   // 5. Evitar duplicados rápidos
   if (recentProcessed.has(studentId)) {
-    console.log(`⚠️ [SCANNER] Estudiante ${studentId} ignorado por timeout reciente.`);
     processingMessage.value = `Estudiante ${studentId} ya procesado`;
     toast.warning('Ya procesado', { description: `Espera unos segundos.` });
     setTimeout(() => {
@@ -102,13 +92,11 @@ const onDecode = async (text: string) => {
     
     const payload = { student_id: studentId, event_id: eventId };
     // CAMBIO AQUÍ: Apuntamos al nuevo endpoint de proceso
-    console.log('🚀 [SCANNER] Enviando POST /api/turns/process con payload:', payload);
 
     const res = await $fetch('/api/turns/process', {
       method: 'POST' as any, 
       body: payload,
     });
-    console.log('✅ [SCANNER] Respuesta del servidor:', res);
 
     // Agregar a lista de recientes para evitar doble escaneo inmediato
     recentProcessed.add(studentId);
@@ -119,7 +107,6 @@ const onDecode = async (text: string) => {
     
     await new Promise((r) => setTimeout(r, 800));
   } catch (err: any) {
-    console.error('🔥 [SCANNER] Error en la petición:', err);
     const msg = err?.data?.message ?? err?.message ?? 'Error desconocido';
     processingMessage.value = `Error: ${String(msg)}`;
     toast.error('Error al procesar', { description: String(msg) });
@@ -127,12 +114,10 @@ const onDecode = async (text: string) => {
   } finally {
     isProcessing.value = false;
     processingMessage.value = '';
-    console.log('🏁 [SCANNER] Ciclo finalizado, listo para el siguiente.');
   }
 };
 
 const onLoaded = () => {
-  console.log(`📷 [SCANNER] Cámara cargada y lista.`);
 };
 
 const eventName = ref('Cargando evento...');

@@ -3,6 +3,7 @@ import { CrossIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import AdmiUpcomingEvents from "~/components/AdmiUpcomingEvents.vue";
 import AdmiCurrentEvent from "~/components/AdmiCurrentEvent.vue";
+import { navigateTo } from '#app';
 
 // fetch events from the API and map to the components' expected shapes
 const { data: eventsResp, pending, error } = await useAsyncData("events", () => $fetch("/api/events"));
@@ -81,8 +82,8 @@ const currentEvent = computed(() => {
       <Button
         variant="outline"
         class="text-secondary underline hover:text-primary outline-0 shadow-none text-lg"
-        >Historial de Eventos</Button
-      >
+        @click="navigateTo('/admi/backlog')"
+      >Historial de Eventos</Button>
     </footer>
   </div>
 </template>
