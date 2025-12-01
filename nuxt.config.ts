@@ -42,6 +42,7 @@ export default defineNuxtConfig({
     workbox: {
       navigateFallback: "/",
       globPatterns: ["**/*.{js,css,html,txt,ico,png,svg,woff2}"],
+      maximumFileSizeToCacheInBytes: 5000000,
     },
     manifest: {
       name: "Crono-Q",
