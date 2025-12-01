@@ -22,11 +22,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
       });
       userData = response.data;
     } else {
+      // En cliente, las cookies se envían automáticamente
       const response = await $fetch('/api/auth/me', { 
         credentials: 'include' 
       });
       userData = response.data;
     }
+
 
     // PROTECCIÓN DE RUTAS ADMIN
     if (to.path.startsWith('/admi')) {
@@ -44,9 +46,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
       return;
     }
 
+    // Otras rutas autenticadas
+    
   } catch (error: any) {
     
     // Si hay error de autenticación, redirigir a login
+    // PERO solo si no estamos ya en una ruta pública
     if (!publicRoutes.includes(to.path)) {
       return navigateTo('/login');
     }

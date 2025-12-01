@@ -117,7 +117,6 @@ const startPolling = () => {
     await fetchRegistered();
   }, POLLING_INTERVAL);
   
-  console.log('🔄 Polling iniciado: actualizando cada', POLLING_INTERVAL / 1000, 'segundos');
 };
 
 // Detener polling cuando el componente se desmonta
@@ -125,7 +124,6 @@ const stopPolling = () => {
   if (pollingInterval) {
     clearInterval(pollingInterval);
     pollingInterval = null;
-    console.log('⏹️ Polling detenido');
   }
 };
 
