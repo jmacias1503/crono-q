@@ -30,6 +30,11 @@ export default defineNuxtConfig({
     optimizeDeps: {
       include: ["reka-ui"],
     },
+    resolve: {
+      alias: {
+	'.prisma/client/index-browser': './node_modules/.prisma/client/index-browser.js'
+      }
+    }
   },
   pwa: {
     strategies: "generateSW",
